@@ -1,17 +1,168 @@
 ---
 title: "Analysis of Political Support in the 2020 United States Election"
 author: "Qi Er (Emma) Teng"
-format: html
-thanks: "Code and data are available at: https://github.com/dwz92/Analysis-of-Political-Support-in-the-2020-United-States-Election. A replication of various aspects in this paper are available at: https://doi.org/10.1214/ss/1049993203."
+thanks: "Code and data are available at: https://github.com/dwz92/Analysis-of-Political-Support-in-the-2020-United-States-Election. A replication of original paper is available at: https://doi.org/10.1214/ss/1049993203."
 date: today
 date-format: long
-abstract: ""
-format: html
+abstract: "This paper analyzes voter behavior in Florida during the 2020 United States presidential election, employing demographic data, voter registration, and election outcomes. Through statistical analyses, it identifies key factors influencing voter support, such as ethnicity, education, and urban-rural distinctions. The study reveals demographic shifts and varying political sentiments among voter groups significantly impacted the election results, offering insights into American political dynamics and future electoral strategies."
+format: pdf
 toc: true
 number-sections: true
 bibliography: references.bib
 ---
 
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+library(tidyverse)
+library(dplyr)
+library(here)
+library(ggplot2)
+library(kableExtra)
+library(dataverse)
+library(readxl)
+library(modelsummary)
+library(broom.mixed)
+```
+
+# Introduction
+This study provides a comprehensive analysis of the political dynamics and voter behavior that characterized the 2020 United States presidential election in Florida. Utilizing a multifaceted dataset that integrates demographic information, voter registration data, and election results, this paper examines the factors that influenced Floridian support for the presidential candidates. The analysis replicates a similar regression model from previous study [@citeOG], and highlights the significant role of ethnicity, education, and age in shaping voter preferences. Additionally, it explores the impact of socio-economic variables and local issues on the electoral outcomes. This paper contributes to the broader understanding of American political landscapes, offering insights into the evolving nature of voter behavior and the strategic considerations for future electoral contests.
+
+# Data and Source
+This paper uses recent datasets from US Census and the R library, dataverse [@citeFL ; @citeDVer]. Although this paper aims to replicate the model from the original paper [@citeOG], we do not follow the exact model due to datasets differences and simplicity. Moreover, we used R [@citeR], a powerful statistical programming language, to clean and process our data.
+
+## Raw Data 1
+```{r}
+#| label: tbl-display-raw-data1
+#| tbl-cap: First Ten Rows of CES2020
+#| echo: false
+
+rawdata1 <- read.csv(here::here("data/raw_data/ces2020.csv"))
+
+rawdata1 |>
+  select(countyname,educ,race,birthyr,CC20_410) |>
+  slice(1:10) |>
+  kable(
+    col.names = c("County", "Education", "Race", "Birth Year", "Voted For"),
+    digits = 1,
+    booktabs = TRUE
+  )
+```
+
+@tbl-display-raw-data1 contains raw data obtained from the dataverse library [@citeDVer]. It contains the County, Voted For, Race, and other demographic features of voters.
+
+## Raw Data 2
+```{r}
+#| label: tbl-display-raw-data2
+#| tbl-cap: First Ten Rows of Florida
+#| warning: false
+#| message: false
+#| echo: false
+
+rawdata2 <- read_excel("data/raw_data/co-est2022-chg-12.xlsx")
+
+rawdata2 |>
+  slice(6:16) |>
+  kable(
+    digits = 1,
+    booktabs = TRUE
+  )
+```
+
+@tbl-display-raw-data2 contains raw data obtained from US Census Bureau [@citeFL], contains the basic demographic parameters of counties in Florida.
+
+## Cleaned Data
+After some complex data manipulation methods using R libraries [@citeXL; @citeTidy; @citeDpl], we were able to combine the two dataset into one suitable dataset for modelling. 
+
+```{r}
+#| label: tbl-display-analyzed
+#| tbl-cap: Cleaned Data
+#| warning: false
+#| message: false
+#| echo: false
+
+clean <- read.csv("data/analysis_data/ces2020_clean.csv")
+
+clean |>
+  slice(1:20) |>
+  kable(
+    digits = 1,
+    booktabs = TRUE
+  )
+```
 
 
 
+# Model
+Although it is intuitive to think logistic regression model is appropriate for modelling election results, it is important to note that in the context of this paper, we are counting the votes of each candidate per county. Thus it won't be suitable to use logit regression. Hence, we are left with poisson and negative binomial regression. Note that, an assumption prior to use the poisson regression model is that the mean and variance must be equal. However, in the context of this paper, we are uncertain of the mean or variance, thus, negative binomial regression will be the more suiting regression for this model.
+
+
+## Model Setup
+
+\begin{equation}
+  y_i|\pi_i \sim Negative Binomial(r, \pi_i) \\
+\end{equation}
+
+\begin{equation}
+  log(\pi_i) = \beta_0 + \beta_1(log \space population_i) + \beta_2(population \space >= \space 65_i) + \\
+\end{equation}  
+
+\begin{equation}  
+  \beta_3(white_i) + \beta_4(hispanic_i) + \beta_5(black_i) +  \beta_6(Biden_i) +  \beta_7(Trump_i) +  
+\end{equation}
+
+\begin{equation}
+  \beta_8(high_i) + \beta_9(college_i)\\
+\end{equation}
+
+\begin{align}
+  \beta_0 \sim Norm(0, 2.5) \\
+  \beta_1 \sim Norm(0, 2.5) \\
+  \beta_2 \sim Norm(0, 2.5) \\
+  \beta_3 \sim Norm(0, 2.5) \\
+  \beta_4 \sim Norm(0, 2.5) \\
+  \beta_5 \sim Norm(0, 2.5) \\
+  \beta_6 \sim Norm(0, 2.5) \\
+  \beta_7 \sim Norm(0, 2.5) \\
+  \beta_8 \sim Norm(0, 2.5) \\
+  \beta_9 \sim Norm(0, 2.5)
+\end{align}
+
+-  $y_i$ represents the votes for Biden
+-  $log \space population_i$ represents the log population
+-  $population \space >= \space 65_i$ represents the population proportion greater or equal to 65
+-  $white_i$ represents the population proportion of white race
+-  $hispanic_i$ represents the population proportion of hispanic race
+-  $black_i$ represents the population proportion of black race
+-  $Biden_i$ represents the population proportion of voted for Biden
+-  $Trump_i$ represents the population proportion of voted for Trump
+-  $high_i$ represents the population proportion of graduated high school
+-  $college_i$ represents the population proportion of graduated college
+
+
+## Model Justification
+The purpose of this model is to analyze electoral support using count data, thus logistic regression is not the best choice. Given that count data is being analyzed, it is also intuitive to assume the presence of overdispersion as it is common in electoral data due to the variability in population sizes. This makes negative binomial regression be the most appropriate choice to account for the overdispersion and provide more reliable estimates and inferences about the factors influencing vote counts.
+
+## Model Display
+```{r}
+#| label: fig-display-analyzed
+#| fig-cap: Model Summary Display
+#| warning: false
+#| message: false
+#| echo: false
+
+model <- read_rds("models/florida2020.rds")
+
+modelsummary(
+  list(
+    "2020 US Election in Florida" = model
+  )
+)
+```
+
+@fig-display-analyzed Describes the summary of our estimated model as mentioned previously.
+
+
+# Reference
