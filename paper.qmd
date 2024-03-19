@@ -1,0 +1,17 @@
+---
+title: "Analysis of Political Support in the 2020 United States Election"
+author: "Qi Er (Emma) Teng"
+format: html
+thanks: "Code and data are available at: https://github.com/dwz92/Analysis-of-Political-Support-in-the-2020-United-States-Election. A replication of various aspects in this paper are available at: https://doi.org/10.1214/ss/1049993203."
+date: today
+date-format: long
+abstract: ""
+format: html
+toc: true
+number-sections: true
+bibliography: references.bib
+---
+
+
+
+
